@@ -1,0 +1,198 @@
+{
+  "items": [
+    {
+      "id": "esp-001",
+      "name": "Espresso",
+      "category": "coffee",
+      "description": "A rich, concentrated shot of our house-roasted blend.",
+      "price": 2.75,
+      "sizes": [
+        { "name": "single", "price": 2.75 },
+        { "name": "double", "price": 3.5 }
+      ],
+      "allergens": [],
+      "dietary": ["vegan", "gluten-free"],
+      "available": true
+    },
+    {
+      "id": "lat-002",
+      "name": "Latte",
+      "category": "coffee",
+      "description": "Espresso with steamed milk and a light layer of foam.",
+      "price": 4.25,
+      "sizes": [
+        { "name": "small", "price": 4.25 },
+        { "name": "medium", "price": 4.75 },
+        { "name": "large", "price": 5.25 }
+      ],
+      "allergens": ["milk"],
+      "dietary": ["vegetarian", "gluten-free"],
+      "available": true
+    },
+    {
+      "id": "cap-003",
+      "name": "Cappuccino",
+      "category": "coffee",
+      "description": "Equal parts espresso, steamed milk, and milk foam.",
+      "price": 4.25,
+      "sizes": [
+        { "name": "small", "price": 4.25 },
+        { "name": "medium", "price": 4.75 }
+      ],
+      "allergens": ["milk"],
+      "dietary": ["vegetarian", "gluten-free"],
+      "available": true
+    },
+    {
+      "id": "mch-004",
+      "name": "Caffe Mocha",
+      "category": "coffee",
+      "description": "Espresso with steamed milk and rich chocolate syrup, topped with whipped cream.",
+      "price": 4.75,
+      "sizes": [
+        { "name": "small", "price": 4.75 },
+        { "name": "medium", "price": 5.25 },
+        { "name": "large", "price": 5.75 }
+      ],
+      "allergens": ["milk"],
+      "dietary": ["vegetarian"],
+      "available": true
+    },
+    {
+      "id": "cbr-005",
+      "name": "Cold Brew",
+      "category": "coffee",
+      "description": "Slow-steeped for 18 hours, served over ice for a smooth, low-acid taste.",
+      "price": 4.5,
+      "sizes": [
+        { "name": "medium", "price": 4.5 },
+        { "name": "large", "price": 5.0 }
+      ],
+      "allergens": [],
+      "dietary": ["vegan", "gluten-free"],
+      "available": true
+    },
+    {
+      "id": "mct-006",
+      "name": "Matcha Latte",
+      "category": "tea",
+      "description": "Ceremonial-grade matcha whisked with steamed milk.",
+      "price": 4.95,
+      "sizes": [
+        { "name": "small", "price": 4.95 },
+        { "name": "medium", "price": 5.45 }
+      ],
+      "allergens": ["milk"],
+      "dietary": ["vegetarian", "gluten-free"],
+      "available": true
+    },
+    {
+      "id": "cht-007",
+      "name": "Chai Tea Latte",
+      "category": "tea",
+      "description": "Black tea spiced with cinnamon, cardamom, and clove, steamed with milk.",
+      "price": 4.5,
+      "sizes": [
+        { "name": "small", "price": 4.5 },
+        { "name": "medium", "price": 5.0 }
+      ],
+      "allergens": ["milk"],
+      "dietary": ["vegetarian"],
+      "available": true
+    },
+    {
+      "id": "grt-008",
+      "name": "Green Tea",
+      "category": "tea",
+      "description": "Steeped loose-leaf green tea, hot or iced.",
+      "price": 3.0,
+      "sizes": [
+        { "name": "medium", "price": 3.0 },
+        { "name": "large", "price": 3.5 }
+      ],
+      "allergens": [],
+      "dietary": ["vegan", "gluten-free"],
+      "available": true
+    },
+    {
+      "id": "cro-009",
+      "name": "Butter Croissant",
+      "category": "pastry",
+      "description": "Flaky, buttery croissant baked fresh daily.",
+      "price": 3.5,
+      "sizes": [],
+      "allergens": ["gluten", "milk", "eggs"],
+      "dietary": ["vegetarian"],
+      "available": true
+    },
+    {
+      "id": "muf-010",
+      "name": "Blueberry Muffin",
+      "category": "pastry",
+      "description": "Moist muffin loaded with fresh blueberries.",
+      "price": 3.25,
+      "sizes": [],
+      "allergens": ["gluten", "milk", "eggs"],
+      "dietary": ["vegetarian"],
+      "available": true
+    },
+    {
+      "id": "bag-011",
+      "name": "Plain Bagel with Cream Cheese",
+      "category": "pastry",
+      "description": "Toasted bagel served with a generous spread of cream cheese.",
+      "price": 3.75,
+      "sizes": [],
+      "allergens": ["gluten", "milk"],
+      "dietary": ["vegetarian"],
+      "available": true
+    },
+    {
+      "id": "san-012",
+      "name": "Turkey & Swiss Sandwich",
+      "category": "sandwich",
+      "description": "Sliced turkey, Swiss cheese, lettuce, and tomato on sourdough.",
+      "price": 7.5,
+      "sizes": [],
+      "allergens": ["gluten", "milk"],
+      "dietary": [],
+      "available": true
+    },
+    {
+      "id": "san-013",
+      "name": "Caprese Panini",
+      "category": "sandwich",
+      "description": "Fresh mozzarella, tomato, and basil pesto pressed on ciabatta.",
+      "price": 7.25,
+      "sizes": [],
+      "allergens": ["gluten", "milk"],
+      "dietary": ["vegetarian"],
+      "available": true
+    },
+    {
+      "id": "sal-014",
+      "name": "Garden Salad",
+      "category": "food",
+      "description": "Mixed greens, cherry tomatoes, cucumber, and house vinaigrette.",
+      "price": 6.5,
+      "sizes": [],
+      "allergens": [],
+      "dietary": ["vegan", "gluten-free"],
+      "available": true
+    },
+    {
+      "id": "hcc-015",
+      "name": "Hot Chocolate",
+      "category": "other",
+      "description": "Steamed milk with rich cocoa, topped with whipped cream.",
+      "price": 3.75,
+      "sizes": [
+        { "name": "small", "price": 3.75 },
+        { "name": "medium", "price": 4.25 }
+      ],
+      "allergens": ["milk"],
+      "dietary": ["vegetarian", "gluten-free"],
+      "available": false
+    }
+  ]
+}
