@@ -18,6 +18,9 @@ import {
   buildOrderSummary,
   canPlaceOrder,
   saveOrder,
+  listOrders,
+  updateOrderStatus,
+  ORDER_STATUSES,
 } from "./order.js";
 import { getApplicablePromotions } from "./promotions.js";
 
@@ -560,6 +563,34 @@ values — always ask.`;
     });
   } catch (err) {
     console.error("Chat request failed:", err.message);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
+  }
+});
+
+app.get("/api/orders", async (req, res) => {
+  try {
+    const orders = await listOrders(rootDir);
+    res.json({ orders });
+  } catch (err) {
+    console.error("Failed to load orders:", err.message);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
+  }
+});
+
+app.patch("/api/orders/:id/status", async (req, res) => {
+  const { status } = req.body ?? {};
+  if (typeof status !== "string" || !ORDER_STATUSES.includes(status)) {
+    return res.status(400).json({ error: "invalid status" });
+  }
+
+  try {
+    const result = await updateOrderStatus(rootDir, req.params.id, status);
+    if (!result.ok) {
+      return res.status(404).json({ error: result.error });
+    }
+    res.json({ order: result.order });
+  } catch (err) {
+    console.error("Failed to update order status:", err.message);
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });

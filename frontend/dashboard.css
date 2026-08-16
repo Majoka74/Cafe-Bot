@@ -1,0 +1,161 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f2e9dc;
+  color: #3a2a1e;
+}
+
+.dashboard {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: #6f4e37;
+  color: #fff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.dashboard-header-icon {
+  font-size: 1.4rem;
+}
+
+.dashboard-header h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  flex: 1;
+}
+
+.dashboard-header button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 16px;
+  background: #fffaf3;
+  color: #6f4e37;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.dashboard-header button:hover {
+  background: #e8ddcb;
+}
+
+.orders-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  color: #8a7a68;
+}
+
+.order-card {
+  background: #fffaf3;
+  border: 1px solid #e5d9c6;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.order-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.order-id {
+  font-weight: 600;
+}
+
+.order-time {
+  color: #8a7a68;
+  font-size: 0.85rem;
+}
+
+.status-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #e8ddcb;
+  color: #3a2a1e;
+}
+
+.status-badge.confirmed {
+  background: #dce6f5;
+  color: #2b4c7e;
+}
+
+.status-badge.preparing {
+  background: #fbe8c6;
+  color: #8a5a10;
+}
+
+.status-badge.ready {
+  background: #d9f0dc;
+  color: #2c6e35;
+}
+
+.status-badge.completed {
+  background: #e0e0e0;
+  color: #4a4a4a;
+}
+
+.status-badge.cancelled {
+  background: #f5d9d9;
+  color: #8a2c2c;
+}
+
+.order-items {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 0.9rem;
+}
+
+.order-section {
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+
+.order-section-label {
+  font-weight: 600;
+}
+
+.order-total {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.status-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-control select {
+  padding: 6px 10px;
+  border: 1px solid #d8c9b0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  .dashboard {
+    padding: 8px;
+  }
+}

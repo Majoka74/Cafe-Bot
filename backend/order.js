@@ -503,6 +503,31 @@ export async function saveOrder(rootDir, orderSummary) {
   return record;
 }
 
+export const ORDER_STATUSES = ["confirmed", "preparing", "ready", "completed", "cancelled"];
+
+export async function listOrders(rootDir) {
+  const ordersPath = path.join(rootDir, "data", "orders.json");
+  try {
+    return JSON.parse(await readFile(ordersPath, "utf-8"));
+  } catch {
+    return [];
+  }
+}
+
+export async function updateOrderStatus(rootDir, id, status) {
+  const ordersPath = path.join(rootDir, "data", "orders.json");
+  const orders = await listOrders(rootDir);
+
+  const index = orders.findIndex((order) => order.id === id);
+  if (index === -1) {
+    return { ok: false, error: "Order not found." };
+  }
+
+  orders[index] = { ...orders[index], status };
+  await writeFile(ordersPath, JSON.stringify(orders, null, 2));
+  return { ok: true, order: orders[index] };
+}
+
 export function removeItemFromOrder(order, menuData, { item_name, current_size } = {}) {
   const item = findMenuItem(menuData, item_name);
   if (!item) {
