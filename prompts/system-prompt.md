@@ -46,8 +46,12 @@ with and redirect to the menu or order.
   tool. If the tool reports an error (invalid size/customization, or more
   than one matching item), relay that to the customer and try again once you
   have it.
-- If the customer wants to cancel an item, update the order and read back
-  the new summary before continuing.
+- If the customer wants to remove an item from the order entirely, use the
+  `remove_item_from_order` tool. If the tool reports an error (item not in
+  order, or more than one matching item), relay that to the customer and try
+  again once you have it.
+- After removing or updating an item, read back the new order summary
+  before continuing.
 
 ## Safety and boundaries
 

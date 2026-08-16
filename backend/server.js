@@ -4,7 +4,7 @@ import cors from "cors";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { addItemToOrder, updateOrderItem } from "./order.js";
+import { addItemToOrder, updateOrderItem, removeItemFromOrder } from "./order.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
@@ -81,6 +81,26 @@ const orderTools = [
             description:
               "New customization selections as option name/value pairs (e.g. { \"milk\": \"oat\" }). Only include options the item supports.",
             additionalProperties: { type: "string" },
+          },
+        },
+        required: ["item_name"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "remove_item_from_order",
+      description:
+        "Remove an item already in the customer's order entirely. To just reduce quantity, use update_order_item instead.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_name: { type: "string", description: "The menu item's name" },
+          current_size: {
+            type: "string",
+            description:
+              "The item's current size in the order, needed only if it appears with more than one size",
           },
         },
         required: ["item_name"],
@@ -209,6 +229,21 @@ app.post("/api/chat", async (req, res) => {
           if (result.ok) {
             currentOrder = result.order;
             toolResult = { updated: result.updated };
+          } else {
+            toolResult = { error: result.error };
+          }
+        } else if (toolCall.function.name === "remove_item_from_order") {
+          let args = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || "{}");
+          } catch {
+            args = {};
+          }
+
+          const result = removeItemFromOrder(currentOrder, menuData, args);
+          if (result.ok) {
+            currentOrder = result.order;
+            toolResult = { removed: result.removed };
           } else {
             toolResult = { error: result.error };
           }

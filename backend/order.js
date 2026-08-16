@@ -169,3 +169,33 @@ export function updateOrderItem(
   const updatedOrder = order.map((l) => (l === line ? updatedLine : l));
   return { ok: true, order: updatedOrder, updated: updatedLine };
 }
+
+export function removeItemFromOrder(order, menuData, { item_name, current_size } = {}) {
+  const item = findMenuItem(menuData, item_name);
+  if (!item) {
+    return { ok: false, error: `"${item_name}" isn't on the menu.` };
+  }
+
+  const matches = order.filter((line) => {
+    if (line.itemId !== item.id) return false;
+    if (current_size && line.size?.toLowerCase() !== current_size.trim().toLowerCase()) {
+      return false;
+    }
+    return true;
+  });
+
+  if (matches.length === 0) {
+    return { ok: false, error: `${item.name} isn't in your order yet.` };
+  }
+  if (matches.length > 1) {
+    return {
+      ok: false,
+      error: `You have more than one ${item.name} in your order. Please say which size to remove.`,
+      missing: "current_size",
+    };
+  }
+
+  const line = matches[0];
+  const updatedOrder = order.filter((l) => l !== line);
+  return { ok: true, order: updatedOrder, removed: line };
+}
