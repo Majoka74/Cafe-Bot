@@ -188,7 +188,37 @@ export function summarizeOrder(order) {
   });
 
   const total = order.reduce((sum, line) => sum + line.lineTotal, 0);
-  return `${lines.join("; ")}. Total: $${total.toFixed(2)}.`;
+  return `${lines.join("; ")}. Subtotal: $${total.toFixed(2)}.`;
+}
+
+export function calculateOrderTotal(
+  order,
+  applicablePromotions,
+  { taxRate = 0, deliveryFee = 0, isDelivery = false } = {}
+) {
+  const subtotal = Number(order.reduce((sum, line) => sum + line.lineTotal, 0).toFixed(2));
+  const discount = Number(
+    applicablePromotions.reduce((sum, promo) => sum + promo.total_discount, 0).toFixed(2)
+  );
+  const discountedSubtotal = Number((subtotal - discount).toFixed(2));
+  const tax = Number((discountedSubtotal * taxRate).toFixed(2));
+  const appliedDeliveryFee = isDelivery ? deliveryFee : 0;
+  const total = Number((discountedSubtotal + tax + appliedDeliveryFee).toFixed(2));
+
+  return { subtotal, discount, tax, delivery_fee: appliedDeliveryFee, total };
+}
+
+export function summarizeOrderTotal(totals) {
+  if (totals.subtotal === 0) {
+    return "The order is currently empty, so there's no total yet.";
+  }
+
+  const parts = [`Subtotal: $${totals.subtotal.toFixed(2)}`];
+  if (totals.discount > 0) parts.push(`Discount: -$${totals.discount.toFixed(2)}`);
+  if (totals.tax > 0) parts.push(`Tax: $${totals.tax.toFixed(2)}`);
+  if (totals.delivery_fee > 0) parts.push(`Delivery fee: $${totals.delivery_fee.toFixed(2)}`);
+  parts.push(`Total: $${totals.total.toFixed(2)}`);
+  return `${parts.join(", ")}.`;
 }
 
 const MAX_PICKUP_NAME_LENGTH = 100;

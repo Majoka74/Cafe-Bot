@@ -13,6 +13,8 @@ import {
   summarizePickup,
   setDeliveryInfo,
   summarizeDelivery,
+  calculateOrderTotal,
+  summarizeOrderTotal,
 } from "./order.js";
 import { getApplicablePromotions } from "./promotions.js";
 
@@ -51,6 +53,16 @@ app.use(express.json());
 const MAX_MESSAGE_LENGTH = 1000;
 const MAX_HISTORY_LENGTH = 20;
 const MAX_ORDER_LENGTH = 50;
+
+const TAX_RATE = Number(process.env.TAX_RATE);
+const taxRate = Number.isFinite(TAX_RATE) && TAX_RATE >= 0 ? TAX_RATE : 0;
+
+const DELIVERY_FEE = Number(process.env.DELIVERY_FEE);
+const deliveryFee = Number.isFinite(DELIVERY_FEE) && DELIVERY_FEE >= 0 ? DELIVERY_FEE : 0;
+
+function isDeliveryOrder(delivery) {
+  return Boolean(delivery?.address);
+}
 
 const orderTools = [
   {
@@ -289,11 +301,26 @@ app.post("/api/chat", async (req, res) => {
     let currentOrder = order;
     let currentPickup = pickup ?? {};
     let currentDelivery = delivery ?? {};
+    const currentApplicablePromotions = getApplicablePromotions(
+      currentOrder,
+      menuData,
+      activePromotions
+    );
     const promotionsStatusPrompt = `## Currently applicable promotions
 These are the only promotions that apply to the order right now. If this
 list is empty, no promotion applies — don't mention or apply one.
 
-${JSON.stringify(getApplicablePromotions(currentOrder, menuData, activePromotions))}`;
+${JSON.stringify(currentApplicablePromotions)}`;
+    const currentTotals = calculateOrderTotal(currentOrder, currentApplicablePromotions, {
+      taxRate,
+      deliveryFee,
+      isDelivery: isDeliveryOrder(currentDelivery),
+    });
+    const orderTotalPrompt = `## Current order total
+${summarizeOrderTotal(currentTotals)}
+This total is calculated by the system from menu prices, applicable
+promotions, tax, and the delivery fee. Never calculate, estimate, or invent
+a total, subtotal, tax, or fee yourself — always relay these exact numbers.`;
     const pickupStatusPrompt = `## Current pickup info
 ${summarizePickup(currentPickup)}
 Only ask the customer for pickup details that are still missing above. A
@@ -309,7 +336,7 @@ values — always ask.`;
     const messages = [
       {
         role: "system",
-        content: `${systemPrompt}\n\n${menuPrompt}\n\n${promotionsPrompt}\n\n${promotionsStatusPrompt}\n\n${pickupStatusPrompt}\n\n${deliveryStatusPrompt}`,
+        content: `${systemPrompt}\n\n${menuPrompt}\n\n${promotionsPrompt}\n\n${promotionsStatusPrompt}\n\n${orderTotalPrompt}\n\n${pickupStatusPrompt}\n\n${deliveryStatusPrompt}`,
       },
       ...history,
       { role: "user", content: message },
@@ -407,6 +434,11 @@ values — always ask.`;
           menuData,
           activePromotions
         );
+        toolResult.order_totals = calculateOrderTotal(
+          currentOrder,
+          toolResult.applicable_promotions,
+          { taxRate, deliveryFee, isDelivery: isDeliveryOrder(currentDelivery) }
+        );
         toolResult.pickup_status = summarizePickup(currentPickup);
         toolResult.delivery_status = summarizeDelivery(currentDelivery);
 
@@ -426,6 +458,11 @@ values — always ask.`;
       order: currentOrder,
       pickup: currentPickup,
       delivery: currentDelivery,
+      totals: calculateOrderTotal(
+        currentOrder,
+        getApplicablePromotions(currentOrder, menuData, activePromotions),
+        { taxRate, deliveryFee, isDelivery: isDeliveryOrder(currentDelivery) }
+      ),
     });
   } catch (err) {
     console.error("Chat request failed:", err.message);
