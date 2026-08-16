@@ -12,7 +12,14 @@ const systemPrompt = await readFile(
   path.join(rootDir, "prompts", "system-prompt.md"),
   "utf-8"
 );
-const menu = await readFile(path.join(rootDir, "data", "menu.json"), "utf-8");
+const menuData = JSON.parse(
+  await readFile(path.join(rootDir, "data", "menu.json"), "utf-8")
+);
+const menuPrompt = `## Menu data
+Only mention items, prices, and details listed below. Never invent items,
+prices, or details that aren't in this data.
+
+${JSON.stringify(menuData)}`;
 
 const app = express();
 app.use(cors());
@@ -56,7 +63,7 @@ app.post("/api/chat", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: `${systemPrompt}\n\n## Menu data\n${menu}` },
+          { role: "system", content: `${systemPrompt}\n\n${menuPrompt}` },
           ...history,
           { role: "user", content: message },
         ],
