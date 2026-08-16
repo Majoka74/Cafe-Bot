@@ -1,0 +1,40 @@
+{
+  "promotions": [
+    {
+      "id": "promo-001",
+      "name": "Happy Hour Coffee",
+      "rule": "20% off any coffee category item, ordered between 2pm and 4pm.",
+      "discount": { "type": "percentage", "value": 20 },
+      "eligibility": {
+        "categories": ["coffee"],
+        "valid_hours": { "start": "14:00", "end": "16:00" },
+        "min_order_total": 0
+      },
+      "active": true
+    },
+    {
+      "id": "promo-002",
+      "name": "Pastry + Coffee Combo",
+      "rule": "Add any pastry for $1.50 off when ordered with a coffee or tea item.",
+      "discount": { "type": "fixed_amount", "value": 1.5 },
+      "eligibility": {
+        "categories": ["pastry"],
+        "requires_item_from_categories": ["coffee", "tea"],
+        "min_order_total": 0
+      },
+      "active": true
+    },
+    {
+      "id": "promo-003",
+      "name": "Winter Holiday Special",
+      "rule": "$1 off Hot Chocolate for the holiday season.",
+      "discount": { "type": "fixed_amount", "value": 1.0 },
+      "eligibility": {
+        "item_ids": ["hcc-015"],
+        "valid_dates": { "start": "2025-12-01", "end": "2025-12-31" },
+        "min_order_total": 0
+      },
+      "active": false
+    }
+  ]
+}
