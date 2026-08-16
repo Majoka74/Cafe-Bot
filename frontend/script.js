@@ -1,13 +1,11 @@
+const API_URL = "http://localhost:3000/api/chat";
+
 const chatArea = document.getElementById("chatArea");
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 
-const mockReplies = [
-  "Got it! Anything else I can add to your order?",
-  "Sounds good! Let me know if you'd like to see the full menu.",
-  "Thanks! We'll have that ready for you shortly.",
-  "Sure thing! Is that for here or to go?",
-];
+let history = [];
+let order = [];
 
 function addMessage(text, sender) {
   const message = document.createElement("div");
@@ -22,7 +20,7 @@ function addMessage(text, sender) {
   chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-chatForm.addEventListener("submit", (event) => {
+chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = chatInput.value.trim();
   if (!text) return;
@@ -30,6 +28,25 @@ chatForm.addEventListener("submit", (event) => {
   addMessage(text, "user");
   chatInput.value = "";
 
-  const reply = mockReplies[Math.floor(Math.random() * mockReplies.length)];
-  setTimeout(() => addMessage(reply, "bot"), 500);
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, history, order }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    history.push({ role: "user", content: text });
+    history.push({ role: "assistant", content: data.reply });
+    order = data.order ?? order;
+
+    addMessage(data.reply, "bot");
+  } catch (err) {
+    console.error("Chat request failed:", err.message);
+    addMessage("Sorry, something went wrong. Please try again.", "bot");
+  }
 });
