@@ -1,3 +1,4 @@
+// Update this to your deployed backend URL when hosting CafeBot online.
 const API_URL = "http://localhost:3000/api/chat";
 
 const chatArea = document.getElementById("chatArea");

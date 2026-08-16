@@ -12,3 +12,6 @@ venv/
 
 # Logs
 *.log
+
+# Runtime data (contains customer order info, regenerated at runtime)
+data/orders.json

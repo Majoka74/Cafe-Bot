@@ -1,4 +1,4 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
 import express from "express";
 import cors from "cors";
 import { readFile } from "node:fs/promises";
@@ -26,6 +26,7 @@ import { getApplicablePromotions } from "./promotions.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
+loadEnv({ path: path.join(rootDir, ".env") });
 
 const systemPrompt = await readFile(
   path.join(rootDir, "prompts", "system-prompt.md"),
