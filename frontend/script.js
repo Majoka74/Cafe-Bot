@@ -8,6 +8,7 @@ let history = [];
 let order = [];
 let pickup = {};
 let delivery = {};
+let awaitingConfirmation = false;
 
 function addMessage(text, sender) {
   const message = document.createElement("div");
@@ -34,7 +35,14 @@ chatForm.addEventListener("submit", async (event) => {
     const response = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, history, order, pickup, delivery }),
+      body: JSON.stringify({
+        message: text,
+        history,
+        order,
+        pickup,
+        delivery,
+        awaitingConfirmation,
+      }),
     });
 
     if (!response.ok) {
@@ -47,6 +55,7 @@ chatForm.addEventListener("submit", async (event) => {
     order = data.order ?? order;
     pickup = data.pickup ?? pickup;
     delivery = data.delivery ?? delivery;
+    awaitingConfirmation = data.awaitingConfirmation ?? awaitingConfirmation;
 
     addMessage(data.reply, "bot");
   } catch (err) {

@@ -1,3 +1,7 @@
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+
 export function findMenuItem(menuData, itemName) {
   if (typeof itemName !== "string") return undefined;
   const normalized = itemName.trim().toLowerCase();
@@ -382,6 +386,120 @@ export function buildOrderSummary(order, { pickup = {}, delivery = {}, promotion
     promotions,
     totals,
   };
+}
+
+const CONFIRMATION_PHRASES = [
+  "yes",
+  "yep",
+  "yup",
+  "yeah",
+  "confirm",
+  "confirmed",
+  "correct",
+  "perfect",
+  "go ahead",
+  "place it",
+  "place the order",
+  "sounds good",
+  "looks good",
+  "that's correct",
+  "thats correct",
+  "that's right",
+  "thats right",
+];
+
+const AMBIGUOUS_WORDS = [
+  "no",
+  "not",
+  "wait",
+  "actually",
+  "maybe",
+  "hold on",
+  "hmm",
+  "unsure",
+  "cancel",
+  "don't",
+  "dont",
+  "nah",
+  "change",
+  "instead",
+];
+
+function containsWord(text, word) {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\b${escaped}\\b`).test(text);
+}
+
+export function isExplicitOrderConfirmation(message) {
+  if (typeof message !== "string") return false;
+
+  const normalized = message
+    .trim()
+    .toLowerCase()
+    .replace(/[!.?,]+$/g, "")
+    .trim();
+
+  if (!normalized) return false;
+  if (AMBIGUOUS_WORDS.some((word) => containsWord(normalized, word))) return false;
+
+  return CONFIRMATION_PHRASES.some(
+    (phrase) => normalized === phrase || normalized.startsWith(`${phrase} `) || normalized.startsWith(`${phrase}, `)
+  );
+}
+
+function isFulfillmentComplete(pickup, delivery) {
+  if (delivery?.address) {
+    return Boolean(delivery.name && delivery.phone && delivery.address);
+  }
+  return Boolean(pickup?.name);
+}
+
+export function canPlaceOrder({ order, pickup, delivery, awaitingConfirmation, message }) {
+  if (!order || order.length === 0) {
+    return { ok: false, error: "The order is empty, so there's nothing to place." };
+  }
+  if (!isFulfillmentComplete(pickup, delivery)) {
+    return {
+      ok: false,
+      error: "Fulfillment details are incomplete. Collect the required pickup or delivery info first.",
+    };
+  }
+  if (!awaitingConfirmation) {
+    return {
+      ok: false,
+      error:
+        "The full order summary hasn't been read back to the customer yet. Call get_order_summary and read it back before asking for confirmation.",
+    };
+  }
+  if (!isExplicitOrderConfirmation(message)) {
+    return {
+      ok: false,
+      error:
+        "That reply isn't an explicit confirmation. Ask the customer to clearly confirm (e.g. \"yes, place the order\") before finalizing — an unclear or ambiguous reply never counts as confirmation.",
+    };
+  }
+  return { ok: true };
+}
+
+export async function saveOrder(rootDir, orderSummary) {
+  const ordersPath = path.join(rootDir, "data", "orders.json");
+
+  let orders = [];
+  try {
+    orders = JSON.parse(await readFile(ordersPath, "utf-8"));
+  } catch {
+    orders = [];
+  }
+
+  const record = {
+    id: randomUUID(),
+    placed_at: new Date().toISOString(),
+    ...orderSummary,
+  };
+
+  orders.push(record);
+  await writeFile(ordersPath, JSON.stringify(orders, null, 2));
+  return record;
 }
 
 export function removeItemFromOrder(order, menuData, { item_name, current_size } = {}) {

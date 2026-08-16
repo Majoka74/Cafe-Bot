@@ -16,6 +16,8 @@ import {
   calculateOrderTotal,
   summarizeOrderTotal,
   buildOrderSummary,
+  canPlaceOrder,
+  saveOrder,
 } from "./order.js";
 import { getApplicablePromotions } from "./promotions.js";
 
@@ -196,6 +198,18 @@ const orderTools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "place_order",
+      description:
+        "Finalize and save the customer's order. This is the ONLY way an order gets placed — nothing is saved until this succeeds. Only call this after get_order_summary has been read back to the customer in full and their very next reply is a clear, explicit confirmation (e.g. \"yes\", \"confirmed\", \"that's correct, place it\"). Never call this for an ambiguous or unclear reply (\"ok\", \"sure\", a question, a requested change, silence) — ask the customer to explicitly confirm instead. If it returns an error, the order was NOT placed; relay the reason and ask again.",
+      parameters: {
+        type: "object",
+        properties: {},
+      },
+    },
+  },
 ];
 
 function isValidHistory(history) {
@@ -289,7 +303,14 @@ async function callOpenAI(messages) {
 }
 
 app.post("/api/chat", async (req, res) => {
-  const { message, history = [], order = [], pickup = {}, delivery = {} } = req.body ?? {};
+  const {
+    message,
+    history = [],
+    order = [],
+    pickup = {},
+    delivery = {},
+    awaitingConfirmation = false,
+  } = req.body ?? {};
 
   if (typeof message !== "string" || !message.trim()) {
     return res.status(400).json({ error: "message is required" });
@@ -309,11 +330,15 @@ app.post("/api/chat", async (req, res) => {
   if (!isValidDelivery(delivery)) {
     return res.status(400).json({ error: "invalid delivery info" });
   }
+  if (typeof awaitingConfirmation !== "boolean") {
+    return res.status(400).json({ error: "invalid awaitingConfirmation flag" });
+  }
 
   try {
     let currentOrder = order;
     let currentPickup = pickup ?? {};
     let currentDelivery = delivery ?? {};
+    let currentAwaitingConfirmation = awaitingConfirmation;
     const currentApplicablePromotions = getApplicablePromotions(
       currentOrder,
       menuData,
@@ -375,6 +400,7 @@ values — always ask.`;
           const result = addItemToOrder(currentOrder, menuData, args);
           if (result.ok) {
             currentOrder = result.order;
+            currentAwaitingConfirmation = false;
             toolResult = { added: result.added };
           } else {
             toolResult = { error: result.error };
@@ -390,6 +416,7 @@ values — always ask.`;
           const result = updateOrderItem(currentOrder, menuData, args);
           if (result.ok) {
             currentOrder = result.order;
+            currentAwaitingConfirmation = false;
             toolResult = { updated: result.updated };
           } else {
             toolResult = { error: result.error };
@@ -405,6 +432,7 @@ values — always ask.`;
           const result = removeItemFromOrder(currentOrder, menuData, args);
           if (result.ok) {
             currentOrder = result.order;
+            currentAwaitingConfirmation = false;
             toolResult = { removed: result.removed };
           } else {
             toolResult = { error: result.error };
@@ -420,6 +448,7 @@ values — always ask.`;
           const result = setPickupInfo(currentPickup, args);
           if (result.ok) {
             currentPickup = result.pickup;
+            currentAwaitingConfirmation = false;
             toolResult = { pickup: result.pickup };
           } else {
             toolResult = { error: result.error };
@@ -435,12 +464,52 @@ values — always ask.`;
           const result = setDeliveryInfo(currentDelivery, args);
           if (result.ok) {
             currentDelivery = result.delivery;
+            currentAwaitingConfirmation = false;
             toolResult = { delivery: result.delivery };
           } else {
             toolResult = { error: result.error };
           }
         } else if (toolCall.function.name === "get_order_summary") {
           toolResult = {};
+          currentAwaitingConfirmation = true;
+        } else if (toolCall.function.name === "place_order") {
+          const gate = canPlaceOrder({
+            order: currentOrder,
+            pickup: currentPickup,
+            delivery: currentDelivery,
+            awaitingConfirmation: currentAwaitingConfirmation,
+            message,
+          });
+
+          if (!gate.ok) {
+            toolResult = { placed: false, error: gate.error };
+          } else {
+            const applicablePromotionsForOrder = getApplicablePromotions(
+              currentOrder,
+              menuData,
+              activePromotions
+            );
+            const totalsForOrder = calculateOrderTotal(currentOrder, applicablePromotionsForOrder, {
+              taxRate,
+              deliveryFee,
+              isDelivery: isDeliveryOrder(currentDelivery),
+            });
+            const saved = await saveOrder(
+              rootDir,
+              buildOrderSummary(currentOrder, {
+                pickup: currentPickup,
+                delivery: currentDelivery,
+                promotions: applicablePromotionsForOrder,
+                totals: totalsForOrder,
+              })
+            );
+
+            currentOrder = [];
+            currentPickup = {};
+            currentDelivery = {};
+            currentAwaitingConfirmation = false;
+            toolResult = { placed: true, order_id: saved.id, placed_at: saved.placed_at };
+          }
         }
 
         toolResult.order_summary = summarizeOrder(currentOrder);
@@ -482,6 +551,7 @@ values — always ask.`;
       order: currentOrder,
       pickup: currentPickup,
       delivery: currentDelivery,
+      awaitingConfirmation: currentAwaitingConfirmation,
       totals: calculateOrderTotal(
         currentOrder,
         getApplicablePromotions(currentOrder, menuData, activePromotions),
