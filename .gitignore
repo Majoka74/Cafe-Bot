@@ -1,0 +1,14 @@
+# Environment variables
+.env
+
+# Dependencies
+node_modules/
+__pycache__/
+venv/
+
+# Editor/OS files
+.DS_Store
+.vscode/
+
+# Logs
+*.log
