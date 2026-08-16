@@ -76,7 +76,7 @@ const orderTools = [
     function: {
       name: "add_item_to_order",
       description:
-        "Add one valid menu item to the customer's current order. Only call this once you know the item, its size (if it has sizes), and the quantity.",
+        "Add one valid menu item to the customer's current order. Only call this once you know the item, its size (if it has sizes), its quantity, and any customizations the item supports (e.g. milk type) that the customer has stated a preference for.",
       parameters: {
         type: "object",
         properties: {
@@ -89,6 +89,12 @@ const orderTools = [
             type: "integer",
             minimum: 1,
             description: "How many of this item to add",
+          },
+          customizations: {
+            type: "object",
+            description:
+              "Customization selections as option name/value pairs (e.g. { \"milk\": \"oat\" }). Only include options the item supports.",
+            additionalProperties: { type: "string" },
           },
         },
         required: ["item_name", "quantity"],
@@ -109,6 +115,12 @@ const orderTools = [
             type: "string",
             description:
               "The item's current size in the order, needed only if it appears with more than one size",
+          },
+          current_customizations: {
+            type: "object",
+            description:
+              "The item's current customization values in the order (e.g. { \"milk\": \"oat\" }), needed only if it appears more than once and current_size alone doesn't identify a single line",
+            additionalProperties: { type: "string" },
           },
           size: { type: "string", description: "The new size, if changing size" },
           quantity: {
@@ -141,6 +153,12 @@ const orderTools = [
             type: "string",
             description:
               "The item's current size in the order, needed only if it appears with more than one size",
+          },
+          current_customizations: {
+            type: "object",
+            description:
+              "The item's current customization values in the order (e.g. { \"milk\": \"oat\" }), needed only if it appears more than once and current_size alone doesn't identify a single line",
+            additionalProperties: { type: "string" },
           },
         },
         required: ["item_name"],
@@ -451,6 +469,7 @@ values — always ask.`;
           const result = setPickupInfo(currentPickup, args);
           if (result.ok) {
             currentPickup = result.pickup;
+            currentDelivery = {};
             currentAwaitingConfirmation = false;
             toolResult = { pickup: result.pickup };
           } else {
@@ -480,7 +499,10 @@ values — always ask.`;
             order: currentOrder,
             pickup: currentPickup,
             delivery: currentDelivery,
-            awaitingConfirmation: currentAwaitingConfirmation,
+            // Must have been awaiting confirmation BEFORE this turn started (i.e. the
+            // summary was read back on a prior turn) — a get_order_summary call earlier
+            // in this same turn must not be enough to unlock place_order in that turn.
+            awaitingConfirmation: awaitingConfirmation && currentAwaitingConfirmation,
             message,
           });
 

@@ -8,7 +8,7 @@ export function findMenuItem(menuData, itemName) {
   return menuData.items.find((item) => item.name.toLowerCase() === normalized);
 }
 
-export function addItemToOrder(order, menuData, { item_name, size, quantity } = {}) {
+export function addItemToOrder(order, menuData, { item_name, size, quantity, customizations } = {}) {
   const item = findMenuItem(menuData, item_name);
   if (!item) {
     return { ok: false, error: `"${item_name}" isn't on the menu.` };
@@ -17,7 +17,10 @@ export function addItemToOrder(order, menuData, { item_name, size, quantity } = 
     return { ok: false, error: `${item.name} is currently unavailable.` };
   }
 
-  const qty = Number.isInteger(quantity) && quantity > 0 ? quantity : 1;
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    return { ok: false, error: "Please give a valid quantity (a positive whole number)." };
+  }
+  const qty = quantity;
 
   let unitPrice = item.price;
   let sizeName = null;
@@ -45,12 +48,23 @@ export function addItemToOrder(order, menuData, { item_name, size, quantity } = 
     unitPrice = matchedSize.price;
   }
 
+  let itemCustomizations = null;
+  if (customizations !== undefined && customizations !== null) {
+    if (typeof customizations !== "object" || Array.isArray(customizations)) {
+      return { ok: false, error: "Customizations must be a set of option name/value pairs." };
+    }
+    const result = validateCustomizations(item, customizations);
+    if (!result.ok) return result;
+    itemCustomizations = result.customizations;
+  }
+
   const line = {
     itemId: item.id,
     name: item.name,
     size: sizeName,
     quantity: qty,
     unitPrice,
+    customizations: itemCustomizations,
     lineTotal: Number((unitPrice * qty).toFixed(2)),
   };
 
@@ -87,10 +101,20 @@ function validateCustomizations(item, customizations) {
   return { ok: true, customizations: result };
 }
 
+function customizationsMatch(lineCustomizations, filter) {
+  const lc = lineCustomizations ?? {};
+  return Object.entries(filter).every(([name, value]) => {
+    const entry = Object.entries(lc).find(
+      ([lineName]) => lineName.toLowerCase() === String(name).trim().toLowerCase()
+    );
+    return entry && entry[1].toLowerCase() === String(value).trim().toLowerCase();
+  });
+}
+
 export function updateOrderItem(
   order,
   menuData,
-  { item_name, current_size, size, quantity, customizations } = {}
+  { item_name, current_size, current_customizations, size, quantity, customizations } = {}
 ) {
   const item = findMenuItem(menuData, item_name);
   if (!item) {
@@ -102,6 +126,9 @@ export function updateOrderItem(
     if (current_size && line.size?.toLowerCase() !== current_size.trim().toLowerCase()) {
       return false;
     }
+    if (current_customizations && !customizationsMatch(line.customizations, current_customizations)) {
+      return false;
+    }
     return true;
   });
 
@@ -111,7 +138,7 @@ export function updateOrderItem(
   if (matches.length > 1) {
     return {
       ok: false,
-      error: `You have more than one ${item.name} in your order. Please say which size to update.`,
+      error: `You have more than one ${item.name} in your order. Please say which size and/or customization (e.g. milk type) to update.`,
       missing: "current_size",
     };
   }
@@ -528,7 +555,7 @@ export async function updateOrderStatus(rootDir, id, status) {
   return { ok: true, order: orders[index] };
 }
 
-export function removeItemFromOrder(order, menuData, { item_name, current_size } = {}) {
+export function removeItemFromOrder(order, menuData, { item_name, current_size, current_customizations } = {}) {
   const item = findMenuItem(menuData, item_name);
   if (!item) {
     return { ok: false, error: `"${item_name}" isn't on the menu.` };
@@ -537,6 +564,9 @@ export function removeItemFromOrder(order, menuData, { item_name, current_size }
   const matches = order.filter((line) => {
     if (line.itemId !== item.id) return false;
     if (current_size && line.size?.toLowerCase() !== current_size.trim().toLowerCase()) {
+      return false;
+    }
+    if (current_customizations && !customizationsMatch(line.customizations, current_customizations)) {
       return false;
     }
     return true;
@@ -548,7 +578,7 @@ export function removeItemFromOrder(order, menuData, { item_name, current_size }
   if (matches.length > 1) {
     return {
       ok: false,
-      error: `You have more than one ${item.name} in your order. Please say which size to remove.`,
+      error: `You have more than one ${item.name} in your order. Please say which size and/or customization (e.g. milk type) to remove.`,
       missing: "current_size",
     };
   }
