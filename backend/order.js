@@ -494,6 +494,7 @@ export async function saveOrder(rootDir, orderSummary) {
   const record = {
     id: randomUUID(),
     placed_at: new Date().toISOString(),
+    status: "confirmed",
     ...orderSummary,
   };
 
