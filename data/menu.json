@@ -27,7 +27,10 @@
       ],
       "allergens": ["milk"],
       "dietary": ["vegetarian", "gluten-free"],
-      "available": true
+      "available": true,
+      "customizations": [
+        { "name": "milk", "options": ["whole", "oat", "almond", "skim"] }
+      ]
     },
     {
       "id": "cap-003",
@@ -41,7 +44,10 @@
       ],
       "allergens": ["milk"],
       "dietary": ["vegetarian", "gluten-free"],
-      "available": true
+      "available": true,
+      "customizations": [
+        { "name": "milk", "options": ["whole", "oat", "almond", "skim"] }
+      ]
     },
     {
       "id": "mch-004",
@@ -56,7 +62,10 @@
       ],
       "allergens": ["milk"],
       "dietary": ["vegetarian"],
-      "available": true
+      "available": true,
+      "customizations": [
+        { "name": "milk", "options": ["whole", "oat", "almond", "skim"] }
+      ]
     },
     {
       "id": "cbr-005",
@@ -84,7 +93,10 @@
       ],
       "allergens": ["milk"],
       "dietary": ["vegetarian", "gluten-free"],
-      "available": true
+      "available": true,
+      "customizations": [
+        { "name": "milk", "options": ["whole", "oat", "almond", "skim"] }
+      ]
     },
     {
       "id": "cht-007",
@@ -98,7 +110,10 @@
       ],
       "allergens": ["milk"],
       "dietary": ["vegetarian"],
-      "available": true
+      "available": true,
+      "customizations": [
+        { "name": "milk", "options": ["whole", "oat", "almond", "skim"] }
+      ]
     },
     {
       "id": "grt-008",
@@ -192,7 +207,10 @@
       ],
       "allergens": ["milk"],
       "dietary": ["vegetarian", "gluten-free"],
-      "available": false
+      "available": false,
+      "customizations": [
+        { "name": "milk", "options": ["whole", "oat", "almond", "skim"] }
+      ]
     }
   ]
 }

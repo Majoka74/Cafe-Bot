@@ -4,7 +4,7 @@ import cors from "cors";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { addItemToOrder } from "./order.js";
+import { addItemToOrder, updateOrderItem } from "./order.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
@@ -55,6 +55,38 @@ const orderTools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "update_order_item",
+      description:
+        "Change the size, quantity, and/or customizations of an item already in the customer's order. Only include the fields that are changing.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_name: { type: "string", description: "The menu item's name" },
+          current_size: {
+            type: "string",
+            description:
+              "The item's current size in the order, needed only if it appears with more than one size",
+          },
+          size: { type: "string", description: "The new size, if changing size" },
+          quantity: {
+            type: "integer",
+            minimum: 1,
+            description: "The new quantity, if changing quantity",
+          },
+          customizations: {
+            type: "object",
+            description:
+              "New customization selections as option name/value pairs (e.g. { \"milk\": \"oat\" }). Only include options the item supports.",
+            additionalProperties: { type: "string" },
+          },
+        },
+        required: ["item_name"],
+      },
+    },
+  },
 ];
 
 function isValidHistory(history) {
@@ -81,7 +113,17 @@ function isValidOrder(order) {
       Number.isInteger(line.quantity) &&
       line.quantity > 0 &&
       typeof line.unitPrice === "number" &&
-      typeof line.lineTotal === "number"
+      typeof line.lineTotal === "number" &&
+      (line.customizations === undefined ||
+        line.customizations === null ||
+        isValidCustomizations(line.customizations))
+  );
+}
+
+function isValidCustomizations(customizations) {
+  if (typeof customizations !== "object" || Array.isArray(customizations)) return false;
+  return Object.entries(customizations).every(
+    ([key, value]) => typeof key === "string" && typeof value === "string"
   );
 }
 
@@ -152,6 +194,21 @@ app.post("/api/chat", async (req, res) => {
           if (result.ok) {
             currentOrder = result.order;
             toolResult = { added: result.added };
+          } else {
+            toolResult = { error: result.error };
+          }
+        } else if (toolCall.function.name === "update_order_item") {
+          let args = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || "{}");
+          } catch {
+            args = {};
+          }
+
+          const result = updateOrderItem(currentOrder, menuData, args);
+          if (result.ok) {
+            currentOrder = result.order;
+            toolResult = { updated: result.updated };
           } else {
             toolResult = { error: result.error };
           }
