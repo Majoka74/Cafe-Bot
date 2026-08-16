@@ -191,6 +191,44 @@ export function summarizeOrder(order) {
   return `${lines.join("; ")}. Total: $${total.toFixed(2)}.`;
 }
 
+const MAX_PICKUP_NAME_LENGTH = 100;
+const MAX_PICKUP_TIME_LENGTH = 50;
+
+export function setPickupInfo(pickup, { name, pickup_time } = {}) {
+  const updated = { ...(pickup ?? {}) };
+
+  if (name !== undefined) {
+    if (typeof name !== "string" || !name.trim()) {
+      return { ok: false, error: "Please provide a valid name for the pickup order." };
+    }
+    if (name.trim().length > MAX_PICKUP_NAME_LENGTH) {
+      return { ok: false, error: "That name is too long." };
+    }
+    updated.name = name.trim();
+  }
+
+  if (pickup_time !== undefined) {
+    if (typeof pickup_time !== "string" || !pickup_time.trim()) {
+      return { ok: false, error: "Please provide a valid pickup time." };
+    }
+    if (pickup_time.trim().length > MAX_PICKUP_TIME_LENGTH) {
+      return { ok: false, error: "That pickup time is too long." };
+    }
+    updated.time = pickup_time.trim();
+  }
+
+  return { ok: true, pickup: updated };
+}
+
+export function summarizePickup(pickup) {
+  if (!pickup?.name) {
+    return "No pickup name on file yet.";
+  }
+  return pickup.time
+    ? `Pickup for ${pickup.name} at ${pickup.time}.`
+    : `Pickup for ${pickup.name} (no specific time requested).`;
+}
+
 export function removeItemFromOrder(order, menuData, { item_name, current_size } = {}) {
   const item = findMenuItem(menuData, item_name);
   if (!item) {

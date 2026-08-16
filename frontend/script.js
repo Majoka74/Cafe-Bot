@@ -6,6 +6,7 @@ const chatInput = document.getElementById("chatInput");
 
 let history = [];
 let order = [];
+let pickup = {};
 
 function addMessage(text, sender) {
   const message = document.createElement("div");
@@ -32,7 +33,7 @@ chatForm.addEventListener("submit", async (event) => {
     const response = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, history, order }),
+      body: JSON.stringify({ message: text, history, order, pickup }),
     });
 
     if (!response.ok) {
@@ -43,6 +44,7 @@ chatForm.addEventListener("submit", async (event) => {
     history.push({ role: "user", content: text });
     history.push({ role: "assistant", content: data.reply });
     order = data.order ?? order;
+    pickup = data.pickup ?? pickup;
 
     addMessage(data.reply, "bot");
   } catch (err) {

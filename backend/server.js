@@ -4,7 +4,14 @@ import cors from "cors";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { addItemToOrder, updateOrderItem, removeItemFromOrder, summarizeOrder } from "./order.js";
+import {
+  addItemToOrder,
+  updateOrderItem,
+  removeItemFromOrder,
+  summarizeOrder,
+  setPickupInfo,
+  summarizePickup,
+} from "./order.js";
 import { getApplicablePromotions } from "./promotions.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -120,6 +127,24 @@ const orderTools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "set_pickup_info",
+      description:
+        "Record the customer's pickup details. Call this with whatever is being provided now — only include a field if the customer just gave that information. The customer's name is required before checkout; pickup time is optional.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "The name to put the pickup order under" },
+          pickup_time: {
+            type: "string",
+            description: "The requested pickup time, if the customer gave one",
+          },
+        },
+      },
+    },
+  },
 ];
 
 function isValidHistory(history) {
@@ -153,6 +178,16 @@ function isValidOrder(order) {
   );
 }
 
+function isValidPickup(pickup) {
+  if (pickup === null || pickup === undefined) return true;
+  if (typeof pickup !== "object" || Array.isArray(pickup)) return false;
+  const { name, time, ...rest } = pickup;
+  if (Object.keys(rest).length > 0) return false;
+  if (name !== undefined && (typeof name !== "string" || name.length > 100)) return false;
+  if (time !== undefined && (typeof time !== "string" || time.length > 50)) return false;
+  return true;
+}
+
 function isValidCustomizations(customizations) {
   if (typeof customizations !== "object" || Array.isArray(customizations)) return false;
   return Object.entries(customizations).every(
@@ -183,7 +218,7 @@ async function callOpenAI(messages) {
 }
 
 app.post("/api/chat", async (req, res) => {
-  const { message, history = [], order = [] } = req.body ?? {};
+  const { message, history = [], order = [], pickup = {} } = req.body ?? {};
 
   if (typeof message !== "string" || !message.trim()) {
     return res.status(400).json({ error: "message is required" });
@@ -197,18 +232,27 @@ app.post("/api/chat", async (req, res) => {
   if (!isValidOrder(order)) {
     return res.status(400).json({ error: "invalid order" });
   }
+  if (!isValidPickup(pickup)) {
+    return res.status(400).json({ error: "invalid pickup info" });
+  }
 
   try {
     let currentOrder = order;
+    let currentPickup = pickup ?? {};
     const promotionsStatusPrompt = `## Currently applicable promotions
 These are the only promotions that apply to the order right now. If this
 list is empty, no promotion applies — don't mention or apply one.
 
 ${JSON.stringify(getApplicablePromotions(currentOrder, menuData, activePromotions))}`;
+    const pickupStatusPrompt = `## Current pickup info
+${summarizePickup(currentPickup)}
+Only ask the customer for pickup details that are still missing above. A
+customer name is required before checkout; pickup time is optional and
+should only be asked about once, not repeatedly.`;
     const messages = [
       {
         role: "system",
-        content: `${systemPrompt}\n\n${menuPrompt}\n\n${promotionsPrompt}\n\n${promotionsStatusPrompt}`,
+        content: `${systemPrompt}\n\n${menuPrompt}\n\n${promotionsPrompt}\n\n${promotionsStatusPrompt}\n\n${pickupStatusPrompt}`,
       },
       ...history,
       { role: "user", content: message },
@@ -268,6 +312,21 @@ ${JSON.stringify(getApplicablePromotions(currentOrder, menuData, activePromotion
           } else {
             toolResult = { error: result.error };
           }
+        } else if (toolCall.function.name === "set_pickup_info") {
+          let args = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || "{}");
+          } catch {
+            args = {};
+          }
+
+          const result = setPickupInfo(currentPickup, args);
+          if (result.ok) {
+            currentPickup = result.pickup;
+            toolResult = { pickup: result.pickup };
+          } else {
+            toolResult = { error: result.error };
+          }
         }
 
         toolResult.order_summary = summarizeOrder(currentOrder);
@@ -276,6 +335,7 @@ ${JSON.stringify(getApplicablePromotions(currentOrder, menuData, activePromotion
           menuData,
           activePromotions
         );
+        toolResult.pickup_status = summarizePickup(currentPickup);
 
         messages.push({
           role: "tool",
@@ -288,7 +348,7 @@ ${JSON.stringify(getApplicablePromotions(currentOrder, menuData, activePromotion
       replyMessage = data.choices?.[0]?.message;
     }
 
-    res.json({ reply: replyMessage?.content ?? "", order: currentOrder });
+    res.json({ reply: replyMessage?.content ?? "", order: currentOrder, pickup: currentPickup });
   } catch (err) {
     console.error("Chat request failed:", err.message);
     res.status(500).json({ error: "Something went wrong. Please try again." });
