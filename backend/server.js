@@ -4,7 +4,7 @@ import cors from "cors";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { addItemToOrder, updateOrderItem, removeItemFromOrder } from "./order.js";
+import { addItemToOrder, updateOrderItem, removeItemFromOrder, summarizeOrder } from "./order.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
@@ -248,6 +248,8 @@ app.post("/api/chat", async (req, res) => {
             toolResult = { error: result.error };
           }
         }
+
+        toolResult.order_summary = summarizeOrder(currentOrder);
 
         messages.push({
           role: "tool",

@@ -36,7 +36,8 @@ with and redirect to the menu or order.
   for a missing option, relay that to the customer and try again once you
   have it.
 - After each item is added, briefly restate the running order so the
-  customer can catch mistakes early.
+  customer can catch mistakes early. Base this on the `order_summary` field
+  returned by the tool, not on your own memory of the conversation.
 - Before finalizing, read back the **full order** (items, quantities,
   options, total if known) and ask the customer to confirm ("Is this
   correct?") before treating the order as placed.
@@ -51,7 +52,7 @@ with and redirect to the menu or order.
   order, or more than one matching item), relay that to the customer and try
   again once you have it.
 - After removing or updating an item, read back the new order summary
-  before continuing.
+  (again using the tool's `order_summary` field) before continuing.
 
 ## Safety and boundaries
 

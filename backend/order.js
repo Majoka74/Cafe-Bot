@@ -170,6 +170,27 @@ export function updateOrderItem(
   return { ok: true, order: updatedOrder, updated: updatedLine };
 }
 
+export function summarizeOrder(order) {
+  if (!order || order.length === 0) {
+    return "The order is currently empty.";
+  }
+
+  const lines = order.map((line) => {
+    const details = [];
+    if (line.size) details.push(line.size);
+    if (line.customizations) {
+      for (const [name, value] of Object.entries(line.customizations)) {
+        details.push(`${name}: ${value}`);
+      }
+    }
+    const detailText = details.length > 0 ? ` (${details.join(", ")})` : "";
+    return `${line.quantity}x ${line.name}${detailText} — $${line.lineTotal.toFixed(2)}`;
+  });
+
+  const total = order.reduce((sum, line) => sum + line.lineTotal, 0);
+  return `${lines.join("; ")}. Total: $${total.toFixed(2)}.`;
+}
+
 export function removeItemFromOrder(order, menuData, { item_name, current_size } = {}) {
   const item = findMenuItem(menuData, item_name);
   if (!item) {
