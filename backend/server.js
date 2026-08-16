@@ -15,6 +15,7 @@ import {
   summarizeDelivery,
   calculateOrderTotal,
   summarizeOrderTotal,
+  buildOrderSummary,
 } from "./order.js";
 import { getApplicablePromotions } from "./promotions.js";
 
@@ -180,6 +181,18 @@ const orderTools = [
             description: "Delivery instructions, if the customer gave any",
           },
         },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_order_summary",
+      description:
+        "Get the complete, structured order summary — items with quantities and customizations, fulfillment details, applicable promotions, and the total. Call this right before checkout, once the order and fulfillment details are complete, so you can read the full order back to the customer for confirmation.",
+      parameters: {
+        type: "object",
+        properties: {},
       },
     },
   },
@@ -426,6 +439,8 @@ values — always ask.`;
           } else {
             toolResult = { error: result.error };
           }
+        } else if (toolCall.function.name === "get_order_summary") {
+          toolResult = {};
         }
 
         toolResult.order_summary = summarizeOrder(currentOrder);
@@ -441,6 +456,15 @@ values — always ask.`;
         );
         toolResult.pickup_status = summarizePickup(currentPickup);
         toolResult.delivery_status = summarizeDelivery(currentDelivery);
+
+        if (toolCall.function.name === "get_order_summary") {
+          toolResult.checkout_summary = buildOrderSummary(currentOrder, {
+            pickup: currentPickup,
+            delivery: currentDelivery,
+            promotions: toolResult.applicable_promotions,
+            totals: toolResult.order_totals,
+          });
+        }
 
         messages.push({
           role: "tool",

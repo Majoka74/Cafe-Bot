@@ -346,6 +346,44 @@ export function summarizeDelivery(delivery) {
   return `Deliver to ${delivery.name} (${delivery.phone}) at ${addressLine}.${instructionsText}`;
 }
 
+export function buildOrderSummary(order, { pickup = {}, delivery = {}, promotions = [], totals } = {}) {
+  const items = order.map((line) => ({
+    name: line.name,
+    size: line.size,
+    quantity: line.quantity,
+    customizations: line.customizations ?? null,
+    unit_price: line.unitPrice,
+    line_total: line.lineTotal,
+  }));
+
+  let fulfillment;
+  if (delivery?.address) {
+    fulfillment = {
+      type: "delivery",
+      name: delivery.name ?? null,
+      phone: delivery.phone ?? null,
+      address: delivery.address,
+      apartment: delivery.apartment ?? null,
+      instructions: delivery.instructions ?? null,
+    };
+  } else if (pickup?.name) {
+    fulfillment = {
+      type: "pickup",
+      name: pickup.name,
+      time: pickup.time ?? null,
+    };
+  } else {
+    fulfillment = { type: null };
+  }
+
+  return {
+    items,
+    fulfillment,
+    promotions,
+    totals,
+  };
+}
+
 export function removeItemFromOrder(order, menuData, { item_name, current_size } = {}) {
   const item = findMenuItem(menuData, item_name);
   if (!item) {
