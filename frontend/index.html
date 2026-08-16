@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CafeBot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="chat-app">
+    <header class="chat-header">
+      <span class="chat-header-icon">☕</span>
+      <h1>CafeBot</h1>
+    </header>
+
+    <main class="chat-area" id="chatArea">
+      <div class="message bot">
+        <div class="bubble">Hi there! Welcome to CafeBot ☕ How can I help you today?</div>
+      </div>
+      <div class="message user">
+        <div class="bubble">Hi! Can I see the menu?</div>
+      </div>
+      <div class="message bot">
+        <div class="bubble">Of course! We've got coffee, tea, pastries, sandwiches, and more. What are you in the mood for?</div>
+      </div>
+      <div class="message user">
+        <div class="bubble">I'll have a medium latte and a blueberry muffin, please.</div>
+      </div>
+      <div class="message bot">
+        <div class="bubble">Great choice! One medium latte and a blueberry muffin. Anything else?</div>
+      </div>
+    </main>
+
+    <form class="chat-input-bar" id="chatForm">
+      <input
+        type="text"
+        id="chatInput"
+        placeholder="Type your message..."
+        autocomplete="off"
+      />
+      <button type="submit" id="sendButton" aria-label="Send message">Send</button>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
