@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CafeBot</title>
+  <link rel="icon" href="data:," />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +14,7 @@
       <h1>CafeBot</h1>
     </header>
 
-    <main class="chat-area" id="chatArea">
+    <main class="chat-area" id="chatArea" role="log" aria-live="polite" aria-label="Chat messages">
       <div class="message bot">
         <div class="bubble">Hi there! Welcome to CafeBot ☕ How can I help you today?</div>
       </div>
@@ -36,7 +37,9 @@
         type="text"
         id="chatInput"
         placeholder="Type your message..."
+        aria-label="Type your message"
         autocomplete="off"
+        autofocus
       />
       <button type="submit" id="sendButton" aria-label="Send message">Send</button>
     </form>

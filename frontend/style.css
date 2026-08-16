@@ -60,11 +60,12 @@ body {
 }
 
 .bubble {
+  min-width: 0;
   padding: 10px 14px;
   border-radius: 16px;
   line-height: 1.4;
   font-size: 0.95rem;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .message.bot .bubble {
