@@ -229,6 +229,93 @@ export function summarizePickup(pickup) {
     : `Pickup for ${pickup.name} (no specific time requested).`;
 }
 
+const MAX_DELIVERY_NAME_LENGTH = 100;
+const MAX_DELIVERY_PHONE_LENGTH = 20;
+const MAX_DELIVERY_ADDRESS_LENGTH = 200;
+const MAX_DELIVERY_APARTMENT_LENGTH = 50;
+const MAX_DELIVERY_INSTRUCTIONS_LENGTH = 300;
+
+export function setDeliveryInfo(
+  delivery,
+  { name, phone, address, apartment, instructions } = {}
+) {
+  const updated = { ...(delivery ?? {}) };
+
+  if (name !== undefined) {
+    if (typeof name !== "string" || !name.trim()) {
+      return { ok: false, error: "Please provide a valid name for the delivery order." };
+    }
+    if (name.trim().length > MAX_DELIVERY_NAME_LENGTH) {
+      return { ok: false, error: "That name is too long." };
+    }
+    updated.name = name.trim();
+  }
+
+  if (phone !== undefined) {
+    if (typeof phone !== "string" || !phone.trim()) {
+      return { ok: false, error: "Please provide a valid phone number for the delivery order." };
+    }
+    if (phone.trim().length > MAX_DELIVERY_PHONE_LENGTH) {
+      return { ok: false, error: "That phone number is too long." };
+    }
+    updated.phone = phone.trim();
+  }
+
+  if (address !== undefined) {
+    if (typeof address !== "string" || !address.trim()) {
+      return { ok: false, error: "Please provide a valid delivery address." };
+    }
+    if (address.trim().length > MAX_DELIVERY_ADDRESS_LENGTH) {
+      return { ok: false, error: "That delivery address is too long." };
+    }
+    updated.address = address.trim();
+  }
+
+  if (apartment !== undefined) {
+    if (typeof apartment !== "string" || !apartment.trim()) {
+      return { ok: false, error: "Please provide a valid apartment/unit." };
+    }
+    if (apartment.trim().length > MAX_DELIVERY_APARTMENT_LENGTH) {
+      return { ok: false, error: "That apartment/unit is too long." };
+    }
+    updated.apartment = apartment.trim();
+  }
+
+  if (instructions !== undefined) {
+    if (typeof instructions !== "string" || !instructions.trim()) {
+      return { ok: false, error: "Please provide valid delivery instructions." };
+    }
+    if (instructions.trim().length > MAX_DELIVERY_INSTRUCTIONS_LENGTH) {
+      return { ok: false, error: "Those delivery instructions are too long." };
+    }
+    updated.instructions = instructions.trim();
+  }
+
+  return { ok: true, delivery: updated };
+}
+
+export function summarizeDelivery(delivery) {
+  if (!delivery?.name && !delivery?.phone && !delivery?.address) {
+    return "No delivery info on file yet.";
+  }
+
+  const missing = [];
+  if (!delivery?.name) missing.push("name");
+  if (!delivery?.phone) missing.push("phone number");
+  if (!delivery?.address) missing.push("delivery address");
+  if (missing.length > 0) {
+    return `Delivery info so far is incomplete. Still needed: ${missing.join(", ")}.`;
+  }
+
+  const addressLine = delivery.apartment
+    ? `${delivery.address}, ${delivery.apartment}`
+    : delivery.address;
+  const instructionsText = delivery.instructions
+    ? ` Delivery instructions: ${delivery.instructions}.`
+    : "";
+  return `Deliver to ${delivery.name} (${delivery.phone}) at ${addressLine}.${instructionsText}`;
+}
+
 export function removeItemFromOrder(order, menuData, { item_name, current_size } = {}) {
   const item = findMenuItem(menuData, item_name);
   if (!item) {

@@ -11,6 +11,8 @@ import {
   summarizeOrder,
   setPickupInfo,
   summarizePickup,
+  setDeliveryInfo,
+  summarizeDelivery,
 } from "./order.js";
 import { getApplicablePromotions } from "./promotions.js";
 
@@ -145,6 +147,30 @@ const orderTools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "set_delivery_info",
+      description:
+        "Record the customer's delivery details. Call this with whatever is being provided now — only include a field if the customer just gave that information. Never guess or fill in a value the customer hasn't given. Name, phone, and address are required before checkout; apartment/unit and delivery instructions are optional.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "The customer's name for the delivery order" },
+          phone: { type: "string", description: "The customer's phone number" },
+          address: { type: "string", description: "The full delivery address" },
+          apartment: {
+            type: "string",
+            description: "Apartment/unit number, if the address has one",
+          },
+          instructions: {
+            type: "string",
+            description: "Delivery instructions, if the customer gave any",
+          },
+        },
+      },
+    },
+  },
 ];
 
 function isValidHistory(history) {
@@ -188,6 +214,26 @@ function isValidPickup(pickup) {
   return true;
 }
 
+function isValidDelivery(delivery) {
+  if (delivery === null || delivery === undefined) return true;
+  if (typeof delivery !== "object" || Array.isArray(delivery)) return false;
+  const { name, phone, address, apartment, instructions, ...rest } = delivery;
+  if (Object.keys(rest).length > 0) return false;
+  if (name !== undefined && (typeof name !== "string" || name.length > 100)) return false;
+  if (phone !== undefined && (typeof phone !== "string" || phone.length > 20)) return false;
+  if (address !== undefined && (typeof address !== "string" || address.length > 200)) return false;
+  if (apartment !== undefined && (typeof apartment !== "string" || apartment.length > 50)) {
+    return false;
+  }
+  if (
+    instructions !== undefined &&
+    (typeof instructions !== "string" || instructions.length > 300)
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function isValidCustomizations(customizations) {
   if (typeof customizations !== "object" || Array.isArray(customizations)) return false;
   return Object.entries(customizations).every(
@@ -218,7 +264,7 @@ async function callOpenAI(messages) {
 }
 
 app.post("/api/chat", async (req, res) => {
-  const { message, history = [], order = [], pickup = {} } = req.body ?? {};
+  const { message, history = [], order = [], pickup = {}, delivery = {} } = req.body ?? {};
 
   if (typeof message !== "string" || !message.trim()) {
     return res.status(400).json({ error: "message is required" });
@@ -235,10 +281,14 @@ app.post("/api/chat", async (req, res) => {
   if (!isValidPickup(pickup)) {
     return res.status(400).json({ error: "invalid pickup info" });
   }
+  if (!isValidDelivery(delivery)) {
+    return res.status(400).json({ error: "invalid delivery info" });
+  }
 
   try {
     let currentOrder = order;
     let currentPickup = pickup ?? {};
+    let currentDelivery = delivery ?? {};
     const promotionsStatusPrompt = `## Currently applicable promotions
 These are the only promotions that apply to the order right now. If this
 list is empty, no promotion applies — don't mention or apply one.
@@ -249,10 +299,17 @@ ${summarizePickup(currentPickup)}
 Only ask the customer for pickup details that are still missing above. A
 customer name is required before checkout; pickup time is optional and
 should only be asked about once, not repeatedly.`;
+    const deliveryStatusPrompt = `## Current delivery info
+${summarizeDelivery(currentDelivery)}
+Only ask the customer for delivery details that are still missing above.
+Name, phone number, and full address are required before checkout for a
+delivery order; apartment/unit is only required if the address has one, and
+delivery instructions are optional. Never guess or assume any of these
+values — always ask.`;
     const messages = [
       {
         role: "system",
-        content: `${systemPrompt}\n\n${menuPrompt}\n\n${promotionsPrompt}\n\n${promotionsStatusPrompt}\n\n${pickupStatusPrompt}`,
+        content: `${systemPrompt}\n\n${menuPrompt}\n\n${promotionsPrompt}\n\n${promotionsStatusPrompt}\n\n${pickupStatusPrompt}\n\n${deliveryStatusPrompt}`,
       },
       ...history,
       { role: "user", content: message },
@@ -327,6 +384,21 @@ should only be asked about once, not repeatedly.`;
           } else {
             toolResult = { error: result.error };
           }
+        } else if (toolCall.function.name === "set_delivery_info") {
+          let args = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || "{}");
+          } catch {
+            args = {};
+          }
+
+          const result = setDeliveryInfo(currentDelivery, args);
+          if (result.ok) {
+            currentDelivery = result.delivery;
+            toolResult = { delivery: result.delivery };
+          } else {
+            toolResult = { error: result.error };
+          }
         }
 
         toolResult.order_summary = summarizeOrder(currentOrder);
@@ -336,6 +408,7 @@ should only be asked about once, not repeatedly.`;
           activePromotions
         );
         toolResult.pickup_status = summarizePickup(currentPickup);
+        toolResult.delivery_status = summarizeDelivery(currentDelivery);
 
         messages.push({
           role: "tool",
@@ -348,7 +421,12 @@ should only be asked about once, not repeatedly.`;
       replyMessage = data.choices?.[0]?.message;
     }
 
-    res.json({ reply: replyMessage?.content ?? "", order: currentOrder, pickup: currentPickup });
+    res.json({
+      reply: replyMessage?.content ?? "",
+      order: currentOrder,
+      pickup: currentPickup,
+      delivery: currentDelivery,
+    });
   } catch (err) {
     console.error("Chat request failed:", err.message);
     res.status(500).json({ error: "Something went wrong. Please try again." });
