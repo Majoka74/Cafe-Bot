@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { addItemToOrder, updateOrderItem, removeItemFromOrder, summarizeOrder } from "./order.js";
+import { getApplicablePromotions } from "./promotions.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
@@ -21,6 +22,18 @@ Only mention items, prices, and details listed below. Never invent items,
 prices, or details that aren't in this data.
 
 ${JSON.stringify(menuData)}`;
+
+const promotionsData = JSON.parse(
+  await readFile(path.join(rootDir, "data", "promotions.json"), "utf-8")
+);
+const activePromotions = promotionsData.promotions.filter((p) => p.active);
+const promotionsPrompt = `## Promotions
+Only mention or apply a promotion listed below, and only when the
+"Currently applicable promotions" list (or an order tool's
+"applicable_promotions" result field) shows it as applicable. Never invent
+a discount or mention a promotion that isn't in this list.
+
+${JSON.stringify(activePromotions.map(({ id, name, rule }) => ({ id, name, rule })))}`;
 
 const app = express();
 app.use(cors());
@@ -187,8 +200,16 @@ app.post("/api/chat", async (req, res) => {
 
   try {
     let currentOrder = order;
+    const promotionsStatusPrompt = `## Currently applicable promotions
+These are the only promotions that apply to the order right now. If this
+list is empty, no promotion applies — don't mention or apply one.
+
+${JSON.stringify(getApplicablePromotions(currentOrder, menuData, activePromotions))}`;
     const messages = [
-      { role: "system", content: `${systemPrompt}\n\n${menuPrompt}` },
+      {
+        role: "system",
+        content: `${systemPrompt}\n\n${menuPrompt}\n\n${promotionsPrompt}\n\n${promotionsStatusPrompt}`,
+      },
       ...history,
       { role: "user", content: message },
     ];
@@ -250,6 +271,11 @@ app.post("/api/chat", async (req, res) => {
         }
 
         toolResult.order_summary = summarizeOrder(currentOrder);
+        toolResult.applicable_promotions = getApplicablePromotions(
+          currentOrder,
+          menuData,
+          activePromotions
+        );
 
         messages.push({
           role: "tool",
